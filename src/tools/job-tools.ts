@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { HttpClient } from '../client/http-client.js';
-import { Job, JobSchema, JobQueue, JobQueueSchema, ImportJobConfig, ImportJobConfigSchema, DeleteJobConfig, DeleteJobConfigSchema, JobTemplate, JobSchedule, PaginatedResponse } from '../types/index.js';
+import { Job, JobSchema, JobQueue, JobQueueSchema, ImportJobConfigSchema, DeleteJobConfigSchema, JobTemplate, JobSchedule, PaginatedResponse } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 import { IconectError } from '../utils/errors.js';
 

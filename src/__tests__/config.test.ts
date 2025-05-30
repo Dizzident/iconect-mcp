@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { ConfigManager } from '../config/index.js';
 
 describe('ConfigManager', () => {

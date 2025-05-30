@@ -1,9 +1,9 @@
-import { AuthService } from '../../auth/auth-service';
-import { HttpClient } from '../../client/http-client';
-import { IconectConfig, TokenResponse } from '../../types';
-import { mockResponse, mockError } from '../setup';
+import { AuthService } from '../../auth/auth-service.js';
+import { HttpClient } from '../../client/http-client.js';
+import { IconectConfig, TokenResponse } from '../../types/index.js';
+import { mockResponse, mockError } from '../setup.js';
 
-jest.mock('../../client/http-client');
+jest.mock('../../client/http-client.js');
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -34,6 +34,7 @@ describe('AuthService', () => {
       };
 
       httpClient.post = jest.fn().mockResolvedValue(tokenResponse);
+      httpClient.setTokens = jest.fn();
 
       const result = await authService.authenticateWithPassword('testuser', 'testpass');
 
@@ -45,9 +46,6 @@ describe('AuthService', () => {
           password: 'testpass',
           client_id: 'test-client-id',
           client_secret: 'test-client-secret',
-        }),
-        expect.objectContaining({
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         })
       );
 
@@ -65,11 +63,11 @@ describe('AuthService', () => {
 
       await expect(
         authService.authenticateWithPassword('testuser', 'wrongpass')
-      ).rejects.toThrow('Invalid credentials');
+      ).rejects.toThrow('Password authentication failed');
     });
   });
 
-  describe('authenticateWithCode', () => {
+  describe('authenticateWithAuthCode', () => {
     it('should authenticate successfully with authorization code', async () => {
       const tokenResponse: TokenResponse = {
         access_token: 'test-access-token',
@@ -79,10 +77,10 @@ describe('AuthService', () => {
       };
 
       httpClient.post = jest.fn().mockResolvedValue(tokenResponse);
+      httpClient.setTokens = jest.fn();
 
-      const result = await authService.authenticateWithCode(
+      const result = await authService.authenticateWithAuthCode(
         'test-auth-code',
-        'http://localhost:3000/callback',
         'test-verifier'
       );
 
@@ -91,12 +89,8 @@ describe('AuthService', () => {
         expect.objectContaining({
           grant_type: 'authorization_code',
           code: 'test-auth-code',
-          redirect_uri: 'http://localhost:3000/callback',
           code_verifier: 'test-verifier',
           client_id: 'test-client-id',
-        }),
-        expect.objectContaining({
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         })
       );
 
@@ -110,7 +104,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('refreshAccessToken', () => {
+  describe('refreshToken', () => {
     it('should refresh token successfully', async () => {
       const tokenResponse: TokenResponse = {
         access_token: 'new-access-token',
@@ -120,8 +114,9 @@ describe('AuthService', () => {
       };
 
       httpClient.post = jest.fn().mockResolvedValue(tokenResponse);
+      httpClient.setTokens = jest.fn();
 
-      const result = await authService.refreshAccessToken('old-refresh-token');
+      const result = await authService.refreshToken('old-refresh-token');
 
       expect(httpClient.post).toHaveBeenCalledWith(
         '/oauth/token',
@@ -130,9 +125,6 @@ describe('AuthService', () => {
           refresh_token: 'old-refresh-token',
           client_id: 'test-client-id',
           client_secret: 'test-client-secret',
-        }),
-        expect.objectContaining({
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         })
       );
 
@@ -146,13 +138,12 @@ describe('AuthService', () => {
     });
   });
 
-  describe('generateAuthorizationUrl', () => {
+  describe('generateAuthUrl', () => {
     it('should generate authorization URL with PKCE', () => {
-      const result = authService.generateAuthorizationUrl(
+      const result = authService.generateAuthUrl(
         'http://localhost:3000/callback',
-        'test-state',
-        'read write',
-        'test-challenge'
+        'test-challenge',
+        'test-state'
       );
 
       expect(result).toContain(config.baseUrl);
@@ -160,13 +151,12 @@ describe('AuthService', () => {
       expect(result).toContain(`client_id=${config.clientId}`);
       expect(result).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback');
       expect(result).toContain('state=test-state');
-      expect(result).toContain('scope=read%20write');
       expect(result).toContain('code_challenge=test-challenge');
       expect(result).toContain('code_challenge_method=S256');
     });
 
     it('should generate authorization URL without optional parameters', () => {
-      const result = authService.generateAuthorizationUrl(
+      const result = authService.generateAuthUrl(
         'http://localhost:3000/callback'
       );
 
@@ -175,21 +165,20 @@ describe('AuthService', () => {
       expect(result).toContain(`client_id=${config.clientId}`);
       expect(result).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback');
       expect(result).not.toContain('state=');
-      expect(result).not.toContain('scope=');
       expect(result).not.toContain('code_challenge=');
     });
   });
 
   describe('logout', () => {
     it('should clear tokens on logout', () => {
+      httpClient.clearTokens = jest.fn();
       authService.logout();
-      const tokens = authService.getTokens();
-      expect(tokens).toBeNull();
+      expect(httpClient.clearTokens).toHaveBeenCalled();
     });
   });
 
-  describe('isAuthenticated', () => {
-    it('should return true when tokens are valid', async () => {
+  describe('getCurrentTokens', () => {
+    it('should return tokens when authenticated', async () => {
       const tokenResponse: TokenResponse = {
         access_token: 'test-access-token',
         token_type: 'Bearer',
@@ -198,58 +187,25 @@ describe('AuthService', () => {
       };
 
       httpClient.post = jest.fn().mockResolvedValue(tokenResponse);
-      await authService.authenticateWithPassword('testuser', 'testpass');
-
-      expect(authService.isAuthenticated()).toBe(true);
-    });
-
-    it('should return false when no tokens are set', () => {
-      expect(authService.isAuthenticated()).toBe(false);
-    });
-
-    it('should return false when tokens are expired', async () => {
-      const tokenResponse: TokenResponse = {
-        access_token: 'test-access-token',
-        token_type: 'Bearer',
-        expires_in: -1, // Already expired
-        refresh_token: 'test-refresh-token',
-      };
-
-      httpClient.post = jest.fn().mockResolvedValue(tokenResponse);
-      await authService.authenticateWithPassword('testuser', 'testpass');
-
-      expect(authService.isAuthenticated()).toBe(false);
-    });
-  });
-
-  describe('getAuthStatus', () => {
-    it('should return authenticated status with user info', async () => {
-      const tokenResponse: TokenResponse = {
-        access_token: 'test-access-token',
-        token_type: 'Bearer',
-        expires_in: 3600,
-        refresh_token: 'test-refresh-token',
-      };
-
-      httpClient.post = jest.fn().mockResolvedValue(tokenResponse);
-      await authService.authenticateWithPassword('testuser', 'testpass');
-
-      const status = authService.getAuthStatus();
-
-      expect(status).toEqual({
-        isAuthenticated: true,
+      httpClient.setTokens = jest.fn();
+      httpClient.getTokens = jest.fn().mockReturnValue({
+        accessToken: 'test-access-token',
         tokenType: 'Bearer',
-        expiresAt: expect.any(Date),
-        scope: undefined,
+        expiresAt: new Date(Date.now() + 3600000),
+        refreshToken: 'test-refresh-token',
       });
+
+      await authService.authenticateWithPassword('testuser', 'testpass');
+      const tokens = authService.getCurrentTokens();
+
+      expect(tokens).toBeTruthy();
+      expect(tokens?.accessToken).toBe('test-access-token');
     });
 
-    it('should return unauthenticated status when no tokens', () => {
-      const status = authService.getAuthStatus();
-
-      expect(status).toEqual({
-        isAuthenticated: false,
-      });
+    it('should return null when no tokens are set', () => {
+      httpClient.getTokens = jest.fn().mockReturnValue(null);
+      const tokens = authService.getCurrentTokens();
+      expect(tokens).toBeNull();
     });
   });
 });

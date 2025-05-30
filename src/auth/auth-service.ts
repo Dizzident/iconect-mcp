@@ -121,10 +121,10 @@ export class AuthService {
     
     return {
       accessToken: tokenResponse.access_token,
-      refreshToken: tokenResponse.refresh_token,
+      refreshToken: tokenResponse.refresh_token || undefined,
       expiresAt,
       tokenType: tokenResponse.token_type,
-      scope: tokenResponse.scope,
+      scope: tokenResponse.scope || undefined,
     };
   }
 }

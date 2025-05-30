@@ -113,8 +113,8 @@ export class HttpClient {
       return {
         code: error.code || 'UNKNOWN_ERROR',
         message: error.response?.data?.message || error.message,
-        details: error.response?.data,
-        statusCode: error.response?.status,
+        details: error.response?.data || undefined,
+        statusCode: error.response?.status || undefined,
       };
     }
 
@@ -122,6 +122,8 @@ export class HttpClient {
       return {
         code: 'UNKNOWN_ERROR',
         message: error.message,
+        details: undefined,
+        statusCode: undefined,
       };
     }
 
@@ -129,6 +131,7 @@ export class HttpClient {
       code: 'UNKNOWN_ERROR',
       message: 'An unknown error occurred',
       details: error,
+      statusCode: undefined,
     };
   }
 

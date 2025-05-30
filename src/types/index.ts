@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 export const IconectConfigSchema = z.object({
   baseUrl: z.string().url(),
-  clientId: z.string(),
+  clientId: z.string().min(1, 'Client ID is required'),
   clientSecret: z.string().optional(),
-  timeout: z.number().default(30000),
-  maxRetries: z.number().default(3),
-  retryDelay: z.number().default(1000),
+  timeout: z.number().min(1, 'Timeout must be positive').default(30000),
+  maxRetries: z.number().min(0, 'Max retries must be non-negative').default(3),
+  retryDelay: z.number().min(0, 'Retry delay must be non-negative').default(1000),
 });
 
 export type IconectConfig = z.infer<typeof IconectConfigSchema>;
@@ -23,10 +23,10 @@ export type TokenResponse = z.infer<typeof TokenResponseSchema>;
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken?: string;
+  refreshToken: string | undefined;
   expiresAt: Date;
   tokenType: string;
-  scope?: string;
+  scope: string | undefined;
 }
 
 export const DataServerSchema = z.object({
@@ -71,8 +71,8 @@ export type Client = z.infer<typeof ClientSchema>;
 export interface ApiError {
   code: string;
   message: string;
-  details?: unknown;
-  statusCode?: number;
+  details: unknown | undefined;
+  statusCode: number | undefined;
 }
 
 export interface PaginatedResponse<T> {
@@ -84,11 +84,11 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ListOptions {
-  page?: number;
-  pageSize?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  filter?: Record<string, unknown>;
+  page: number | undefined;
+  pageSize: number | undefined;
+  sortBy: string | undefined;
+  sortOrder: 'asc' | 'desc' | undefined;
+  filter: { [key: string]: unknown } | undefined;
 }
 
 export const FileStoreSchema = z.object({
@@ -230,24 +230,24 @@ export const RecordSchema = z.object({
 export type Record = z.infer<typeof RecordSchema>;
 
 export interface SearchCriteria {
-  query?: string;
-  fields?: string[];
-  filters?: Record<string, unknown>;
-  dateRange?: {
+  query: string | undefined;
+  fields: string[] | undefined;
+  filters: { [key: string]: unknown } | undefined;
+  dateRange: {
     field: string;
-    from?: string;
-    to?: string;
-  };
-  tags?: string[];
-  status?: string[];
-  assignedTo?: string[];
-  folderId?: string;
+    from: string | undefined;
+    to: string | undefined;
+  } | undefined;
+  tags: string[] | undefined;
+  status: string[] | undefined;
+  assignedTo: string[] | undefined;
+  folderId: string | undefined;
 }
 
 export interface BulkOperation {
   action: 'update' | 'delete' | 'move' | 'tag' | 'assign';
   recordIds: string[];
-  parameters?: Record<string, unknown>;
+  parameters: { [key: string]: unknown } | undefined;
 }
 
 export interface BulkOperationResult {
@@ -416,12 +416,12 @@ export type DeleteJobConfig = z.infer<typeof DeleteJobConfigSchema>;
 export interface JobTemplate {
   id: string;
   name: string;
-  description?: string;
+  description: string | undefined;
   type: Job['type'];
-  defaultConfiguration: Record<string, unknown>;
+  defaultConfiguration: { [key: string]: unknown };
   requiredParameters: string[];
   optionalParameters: string[];
-  projectId?: string;
+  projectId: string | undefined;
   isSystem: boolean;
   createdDate: string;
   modifiedDate: string;
@@ -429,16 +429,16 @@ export interface JobTemplate {
 
 export interface JobSchedule {
   id: string;
-  jobId?: string;
-  jobTemplateId?: string;
+  jobId: string | undefined;
+  jobTemplateId: string | undefined;
   name: string;
-  description?: string;
+  description: string | undefined;
   cronExpression: string;
   timezone: string;
   isActive: boolean;
-  nextRun?: string;
-  lastRun?: string;
-  configuration: Record<string, unknown>;
+  nextRun: string | undefined;
+  lastRun: string | undefined;
+  configuration: { [key: string]: unknown };
   createdDate: string;
   modifiedDate: string;
 }

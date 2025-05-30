@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { HttpClient } from '../client/http-client.js';
-import { Record, RecordSchema, SearchCriteria, BulkOperation, BulkOperationResult, RecordRelationship, RecordRelationshipSchema, PaginatedResponse } from '../types/index.js';
+import { Record, RecordSchema, BulkOperationResult, RecordRelationship, RecordRelationshipSchema, PaginatedResponse } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 import { IconectError } from '../utils/errors.js';
 

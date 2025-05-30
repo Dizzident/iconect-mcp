@@ -1,17 +1,28 @@
 import { IconectConfig, IconectConfigSchema } from '../types/index.js';
+import { IconectError } from '../utils/errors.js';
 
 export class ConfigManager {
   private config: IconectConfig | null = null;
 
   load(configData: Partial<IconectConfig>): IconectConfig {
-    const merged = {
-      ...this.getDefaults(),
-      ...configData,
-    };
+    try {
+      const merged = {
+        ...this.getDefaults(),
+        ...configData,
+      };
 
-    const validated = IconectConfigSchema.parse(merged);
-    this.config = validated;
-    return validated;
+      const validated = IconectConfigSchema.parse(merged);
+      this.config = validated;
+      return validated;
+    } catch (error: any) {
+      if (error.errors) {
+        const errorMessages = error.errors.map((err: any) => 
+          `${err.path.join('.')}: ${err.message}`
+        ).join(', ');
+        throw new IconectError(`Configuration validation failed: ${errorMessages}`, 'CONFIG_VALIDATION_ERROR');
+      }
+      throw new IconectError('Configuration validation failed', 'CONFIG_VALIDATION_ERROR');
+    }
   }
 
   get(): IconectConfig | null {
@@ -23,14 +34,24 @@ export class ConfigManager {
       throw new Error('Configuration not loaded. Call load() first.');
     }
 
-    const merged = {
-      ...this.config,
-      ...updates,
-    };
+    try {
+      const merged = {
+        ...this.config,
+        ...updates,
+      };
 
-    const validated = IconectConfigSchema.parse(merged);
-    this.config = validated;
-    return validated;
+      const validated = IconectConfigSchema.parse(merged);
+      this.config = validated;
+      return validated;
+    } catch (error: any) {
+      if (error.errors) {
+        const errorMessages = error.errors.map((err: any) => 
+          `${err.path.join('.')}: ${err.message}`
+        ).join(', ');
+        throw new IconectError(`Configuration validation failed: ${errorMessages}`, 'CONFIG_VALIDATION_ERROR');
+      }
+      throw new IconectError('Configuration validation failed', 'CONFIG_VALIDATION_ERROR');
+    }
   }
 
   private getDefaults(): Partial<IconectConfig> {

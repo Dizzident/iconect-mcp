@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { HttpClient } from '../client/http-client.js';
-import { File, FileSchema, UploadSession, UploadSessionSchema, ListOptions, PaginatedResponse, FileDownloadOptions } from '../types/index.js';
+import { File, FileSchema, UploadSession, UploadSessionSchema, PaginatedResponse } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 import { IconectError } from '../utils/errors.js';
 

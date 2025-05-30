@@ -9,8 +9,8 @@ export interface LogEntry {
   level: LogLevel;
   message: string;
   timestamp: Date;
-  context?: Record<string, unknown>;
-  error?: Error;
+  context: { [key: string]: unknown } | undefined;
+  error: Error | undefined;
 }
 
 export class Logger {
@@ -20,23 +20,23 @@ export class Logger {
     this.logLevel = level;
   }
 
-  debug(message: string, context?: Record<string, unknown>): void {
+  debug(message: string, context?: { [key: string]: unknown }): void {
     this.log(LogLevel.DEBUG, message, context);
   }
 
-  info(message: string, context?: Record<string, unknown>): void {
+  info(message: string, context?: { [key: string]: unknown }): void {
     this.log(LogLevel.INFO, message, context);
   }
 
-  warn(message: string, context?: Record<string, unknown>): void {
+  warn(message: string, context?: { [key: string]: unknown }): void {
     this.log(LogLevel.WARN, message, context);
   }
 
-  error(message: string, error?: Error, context?: Record<string, unknown>): void {
+  error(message: string, error?: Error, context?: { [key: string]: unknown }): void {
     this.log(LogLevel.ERROR, message, context, error);
   }
 
-  private log(level: LogLevel, message: string, context?: Record<string, unknown>, error?: Error): void {
+  private log(level: LogLevel, message: string, context?: { [key: string]: unknown }, error?: Error): void {
     if (level < this.logLevel) {
       return;
     }

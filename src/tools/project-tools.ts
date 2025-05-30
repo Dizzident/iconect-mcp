@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { HttpClient } from '../client/http-client.js';
-import { Project, ProjectSchema, ListOptions, PaginatedResponse } from '../types/index.js';
+import { Project, ProjectSchema, PaginatedResponse } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 import { IconectError } from '../utils/errors.js';
 

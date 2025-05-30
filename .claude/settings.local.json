@@ -4,7 +4,14 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "WebFetch(domain:api.iconect.com)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(npm test)",
+      "Bash(npm install)",
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

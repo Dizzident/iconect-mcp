@@ -1,6 +1,6 @@
-import { ConfigManager } from '../../config/config-manager';
-import { IconectConfig } from '../../types';
-import { IconectError } from '../../utils/errors';
+import { ConfigManager } from '../../config/index.js';
+import { IconectConfig } from '../../types/index.js';
+import { IconectError } from '../../utils/errors.js';
 
 describe('ConfigManager', () => {
   let configManager: ConfigManager;
@@ -153,9 +153,9 @@ describe('ConfigManager', () => {
       const validation = configManager.validate(configData);
       expect(validation.isValid).toBe(false);
       expect(validation.errors.length).toBeGreaterThan(0);
-      expect(validation.errors).toContain(expect.stringContaining('baseUrl'));
-      expect(validation.errors).toContain(expect.stringContaining('clientId'));
-      expect(validation.errors).toContain(expect.stringContaining('timeout'));
+      expect(validation.errors.some(err => err.includes('baseUrl'))).toBe(true);
+      expect(validation.errors.some(err => err.includes('clientId'))).toBe(true);
+      expect(validation.errors.some(err => err.includes('timeout'))).toBe(true);
     });
   });
 

@@ -30,7 +30,7 @@ import { ThemeTools } from './tools/theme-tools.js';
 import { logger, LogLevel } from './utils/logger.js';
 import { IconectError } from './utils/errors.js';
 
-class IconectMCPServer {
+export class IconectMCPServer {
   private server: Server;
   private httpClient: HttpClient | null = null;
   private authService: AuthService | null = null;

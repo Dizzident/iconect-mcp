@@ -1,8 +1,8 @@
-import { AuthTools } from '../../tools/auth-tools';
-import { AuthService } from '../../auth/auth-service';
-import { AuthTokens } from '../../types';
+import { AuthTools } from '../../tools/auth-tools.js';
+import { AuthService } from '../../auth/auth-service.js';
+import { AuthTokens } from '../../types/index.js';
 
-jest.mock('../../auth/auth-service');
+jest.mock('../../auth/auth-service.js');
 
 describe('AuthTools', () => {
   let authTools: AuthTools;
@@ -11,14 +11,11 @@ describe('AuthTools', () => {
   beforeEach(() => {
     authService = {
       authenticateWithPassword: jest.fn(),
-      authenticateWithCode: jest.fn(),
-      refreshAccessToken: jest.fn(),
-      generateAuthorizationUrl: jest.fn(),
+      authenticateWithAuthCode: jest.fn(),
+      refreshToken: jest.fn(),
+      generateAuthUrl: jest.fn(),
       logout: jest.fn(),
-      getAuthStatus: jest.fn(),
-      isAuthenticated: jest.fn(),
-      getTokens: jest.fn(),
-      setTokens: jest.fn(),
+      getCurrentTokens: jest.fn(),
     } as any;
 
     authTools = new AuthTools(authService);
@@ -47,6 +44,7 @@ describe('AuthTools', () => {
         refreshToken: 'test-refresh-token',
         expiresAt: new Date(Date.now() + 3600000),
         tokenType: 'Bearer',
+        scope: 'read write',
       };
 
       authService.authenticateWithPassword.mockResolvedValue(mockTokens);
@@ -61,9 +59,9 @@ describe('AuthTools', () => {
         success: true,
         message: 'Authentication successful',
         data: {
-          accessToken: 'test-access-token',
           tokenType: 'Bearer',
           expiresAt: mockTokens.expiresAt.toISOString(),
+          scope: 'read write',
           hasRefreshToken: true,
         },
       });
@@ -92,22 +90,21 @@ describe('AuthTools', () => {
         refreshToken: 'test-refresh-token',
         expiresAt: new Date(Date.now() + 3600000),
         tokenType: 'Bearer',
+        scope: 'read write',
       };
 
-      authService.authenticateWithCode.mockResolvedValue(mockTokens);
+      authService.authenticateWithAuthCode.mockResolvedValue(mockTokens);
 
       const result = await authTools.handleAuthCode({
-        code: 'test-auth-code',
-        redirectUri: 'http://localhost:3000/callback',
+        authCode: 'test-auth-code',
         codeVerifier: 'test-verifier',
       });
 
-      expect(authService.authenticateWithCode).toHaveBeenCalledWith(
+      expect(authService.authenticateWithAuthCode).toHaveBeenCalledWith(
         'test-auth-code',
-        'http://localhost:3000/callback',
         'test-verifier'
       );
-      expect(result.success).toBe(true);
+      expect((result as any).success).toBe(true);
     });
   });
 
@@ -118,39 +115,37 @@ describe('AuthTools', () => {
         refreshToken: 'new-refresh-token',
         expiresAt: new Date(Date.now() + 3600000),
         tokenType: 'Bearer',
+        scope: 'read write',
       };
 
-      authService.refreshAccessToken.mockResolvedValue(mockTokens);
+      authService.refreshToken.mockResolvedValue(mockTokens);
 
       const result = await authTools.handleRefreshToken({
         refreshToken: 'old-refresh-token',
       });
 
-      expect(authService.refreshAccessToken).toHaveBeenCalledWith('old-refresh-token');
-      expect(result.success).toBe(true);
-      expect(result.data.accessToken).toBe('new-access-token');
+      expect(authService.refreshToken).toHaveBeenCalledWith('old-refresh-token');
+      expect((result as any).success).toBe(true);
     });
   });
 
   describe('handleGenerateAuthUrl', () => {
     it('should generate authorization URL', () => {
-      authService.generateAuthorizationUrl.mockReturnValue('https://auth.test.com/authorize?...');
+      authService.generateAuthUrl.mockReturnValue('https://auth.test.com/authorize?...');
 
       const result = authTools.handleGenerateAuthUrl({
         redirectUri: 'http://localhost:3000/callback',
         state: 'test-state',
-        scope: 'read write',
         codeChallenge: 'test-challenge',
       });
 
-      expect(authService.generateAuthorizationUrl).toHaveBeenCalledWith(
+      expect(authService.generateAuthUrl).toHaveBeenCalledWith(
         'http://localhost:3000/callback',
-        'test-state',
-        'read write',
-        'test-challenge'
+        'test-challenge',
+        'test-state'
       );
-      expect(result.success).toBe(true);
-      expect(result.data.authUrl).toBe('https://auth.test.com/authorize?...');
+      expect((result as any).success).toBe(true);
+      expect((result as any).data.authUrl).toBe('https://auth.test.com/authorize?...');
     });
   });
 
@@ -161,37 +156,38 @@ describe('AuthTools', () => {
       expect(authService.logout).toHaveBeenCalled();
       expect(result).toEqual({
         success: true,
-        message: 'Logged out successfully',
-        data: null,
+        message: 'Logout successful',
+        data: {},
       });
     });
   });
 
   describe('handleGetAuthStatus', () => {
     it('should return authenticated status', () => {
-      authService.getAuthStatus.mockReturnValue({
-        isAuthenticated: true,
-        tokenType: 'Bearer',
+      const mockTokens: AuthTokens = {
+        accessToken: 'test-access-token',
+        refreshToken: 'test-refresh-token',
         expiresAt: new Date(Date.now() + 3600000),
+        tokenType: 'Bearer',
         scope: 'read write',
-      });
+      };
+
+      authService.getCurrentTokens.mockReturnValue(mockTokens);
 
       const result = authTools.handleGetAuthStatus();
 
-      expect(authService.getAuthStatus).toHaveBeenCalled();
-      expect(result.success).toBe(true);
-      expect(result.data.isAuthenticated).toBe(true);
-      expect(result.data.tokenType).toBe('Bearer');
+      expect(authService.getCurrentTokens).toHaveBeenCalled();
+      expect((result as any).success).toBe(true);
+      expect((result as any).data.authenticated).toBe(true);
+      expect((result as any).data.tokenType).toBe('Bearer');
     });
 
     it('should return unauthenticated status', () => {
-      authService.getAuthStatus.mockReturnValue({
-        isAuthenticated: false,
-      });
+      authService.getCurrentTokens.mockReturnValue(null);
 
       const result = authTools.handleGetAuthStatus();
 
-      expect(result.data.isAuthenticated).toBe(false);
+      expect((result as any).data.authenticated).toBe(false);
     });
   });
 });
