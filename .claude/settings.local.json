@@ -11,7 +11,8 @@
       "Bash(grep:*)",
       "Bash(npm run lint)",
       "Bash(npm run test:coverage:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm run ci:*)"
     ],
     "deny": []
   }

@@ -13,7 +13,14 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ci": "npm run typecheck && npm run lint && npm run test:coverage && npm run build",
+    "ci:local": "npm run ci",
+    "docker:build": "docker build -t iconect-mcp-server .",
+    "docker:run": "docker run -p 3000:3000 iconect-mcp-server",
+    "release:patch": "npm version patch && git push --tags",
+    "release:minor": "npm version minor && git push --tags",
+    "release:major": "npm version major && git push --tags"
   },
   "keywords": ["mcp", "iconect", "server", "api"],
   "author": "",

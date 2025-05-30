@@ -1,0 +1,87 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Run every Monday at 8 AM UTC
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install npm-check-updates
+      run: npm install -g npm-check-updates
+      
+    - name: Check for dependency updates
+      id: check-updates
+      run: |
+        echo "Updates available:" > update-summary.md
+        ncu --format group >> update-summary.md || true
+        
+        # Check if there are any updates
+        if ncu --jsonUpgraded | jq -e 'length > 0' > /dev/null; then
+          echo "updates-available=true" >> $GITHUB_OUTPUT
+        else
+          echo "updates-available=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Update dependencies
+      if: steps.check-updates.outputs.updates-available == 'true'
+      run: |
+        # Update patch and minor versions automatically
+        ncu -u --target minor
+        npm install
+        
+    - name: Run tests after update
+      if: steps.check-updates.outputs.updates-available == 'true'
+      run: |
+        npm run test
+        npm run lint
+        npm run build
+        
+    - name: Create Pull Request
+      if: steps.check-updates.outputs.updates-available == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update dependencies'
+        title: 'chore: Automated dependency updates'
+        body: |
+          ## Automated Dependency Updates
+          
+          This PR contains automated updates to project dependencies.
+          
+          ### Changes
+          - Updated dependencies to latest minor/patch versions
+          - All tests passing
+          - No breaking changes expected
+          
+          ### Testing
+          - ✅ Unit tests pass
+          - ✅ Linting passes  
+          - ✅ Build successful
+          
+          Please review and merge if appropriate.
+          
+        branch: dependency-updates
+        delete-branch: true
+        labels: |
+          dependencies
+          automated

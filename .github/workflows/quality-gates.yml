@@ -1,0 +1,226 @@
+name: Quality Gates
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quality-check:
+    name: Quality Check
+    runs-on: ubuntu-latest
+    
+    outputs:
+      coverage-percentage: ${{ steps.coverage.outputs.percentage }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for SonarCloud
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run type check
+      run: npm run typecheck
+      
+    - name: Run linter with annotations
+      run: |
+        npm run lint -- --format=@microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+        npm run lint
+        
+    - name: Upload ESLint results to GitHub
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: eslint-results.sarif
+        wait-for-processing: true
+        
+    - name: Run tests with coverage
+      run: npm run test:coverage
+      
+    - name: Extract coverage percentage
+      id: coverage
+      run: |
+        COVERAGE=$(npm run test:coverage 2>&1 | grep -E "All files.*[0-9]+\.[0-9]+%" | grep -oE "[0-9]+\.[0-9]+%" | head -1 | tr -d '%')
+        echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+        echo "Coverage: $COVERAGE%"
+        
+    - name: Coverage Quality Gate
+      run: |
+        COVERAGE=${{ steps.coverage.outputs.percentage }}
+        MIN_COVERAGE=10.0
+        if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+          echo "❌ Coverage ($COVERAGE%) is below minimum threshold ($MIN_COVERAGE%)"
+          exit 1
+        else
+          echo "✅ Coverage ($COVERAGE%) meets minimum threshold ($MIN_COVERAGE%)"
+        fi
+        
+    - name: Build project
+      run: npm run build
+      
+    - name: Check build size
+      run: |
+        du -sh dist/
+        SIZE=$(du -sb dist/ | cut -f1)
+        MAX_SIZE=10485760  # 10MB in bytes
+        if [ $SIZE -gt $MAX_SIZE ]; then
+          echo "❌ Build size ($(($SIZE/1024/1024))MB) exceeds maximum (10MB)"
+          exit 1
+        else
+          echo "✅ Build size ($(($SIZE/1024/1024))MB) is within limits"
+        fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    permissions:
+      security-events: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run npm audit
+      run: |
+        npm audit --audit-level=moderate --json > audit-results.json || true
+        
+    - name: Check audit results
+      run: |
+        VULNERABILITIES=$(cat audit-results.json | jq '.metadata.vulnerabilities.total // 0')
+        if [ $VULNERABILITIES -gt 0 ]; then
+          echo "❌ Found $VULNERABILITIES vulnerabilities"
+          cat audit-results.json | jq '.vulnerabilities'
+          exit 1
+        else
+          echo "✅ No vulnerabilities found"
+        fi
+
+  documentation-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check required documentation files
+      run: |
+        REQUIRED_FILES=(
+          "README.md"
+          "CHANGELOG.md"
+          "docs/API.md"
+          "docs/TUTORIALS.md"
+          ".github/CONTRIBUTING.md"
+        )
+        
+        MISSING_FILES=()
+        for file in "${REQUIRED_FILES[@]}"; do
+          if [ ! -f "$file" ]; then
+            MISSING_FILES+=("$file")
+          fi
+        done
+        
+        if [ ${#MISSING_FILES[@]} -gt 0 ]; then
+          echo "❌ Missing required documentation files:"
+          printf '%s\n' "${MISSING_FILES[@]}"
+          exit 1
+        else
+          echo "✅ All required documentation files present"
+        fi
+        
+    - name: Check for TODO/FIXME comments
+      run: |
+        TODO_COUNT=$(grep -r "TODO\|FIXME" src/ --include="*.ts" | wc -l || true)
+        if [ $TODO_COUNT -gt 5 ]; then
+          echo "❌ Too many TODO/FIXME comments ($TODO_COUNT). Please address before merging."
+          grep -r "TODO\|FIXME" src/ --include="*.ts" | head -10
+          exit 1
+        else
+          echo "✅ Acceptable number of TODO/FIXME comments ($TODO_COUNT)"
+        fi
+
+  performance-check:
+    name: Performance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Check dependency count
+      run: |
+        DEPS=$(jq '.dependencies | length' package.json)
+        DEV_DEPS=$(jq '.devDependencies | length' package.json)
+        TOTAL_DEPS=$((DEPS + DEV_DEPS))
+        
+        echo "Dependencies: $DEPS"
+        echo "Dev Dependencies: $DEV_DEPS"
+        echo "Total: $TOTAL_DEPS"
+        
+        if [ $DEPS -gt 20 ]; then
+          echo "❌ Too many production dependencies ($DEPS). Consider optimization."
+          exit 1
+        else
+          echo "✅ Dependency count is reasonable"
+        fi
+        
+    - name: Build and measure time
+      run: |
+        START_TIME=$(date +%s)
+        npm run build
+        END_TIME=$(date +%s)
+        BUILD_TIME=$((END_TIME - START_TIME))
+        
+        echo "Build time: ${BUILD_TIME}s"
+        
+        if [ $BUILD_TIME -gt 120 ]; then
+          echo "❌ Build time (${BUILD_TIME}s) exceeds threshold (120s)"
+          exit 1
+        else
+          echo "✅ Build time is acceptable"
+        fi
+
+  integration-readiness:
+    name: Integration Readiness
+    runs-on: ubuntu-latest
+    needs: [quality-check, security-scan, documentation-check, performance-check]
+    
+    steps:
+    - name: Final Quality Gate
+      run: |
+        echo "🎉 All quality gates passed!"
+        echo "✅ Code quality: PASSED"
+        echo "✅ Security scan: PASSED" 
+        echo "✅ Documentation: PASSED"
+        echo "✅ Performance: PASSED"
+        echo "✅ Coverage: ${{ needs.quality-check.outputs.coverage-percentage }}%"
+        echo ""
+        echo "This PR is ready for review and integration."
