@@ -21,6 +21,12 @@ import { RecordTools } from './tools/record-tools.js';
 import { FieldTools } from './tools/field-tools.js';
 import { FolderTools } from './tools/folder-tools.js';
 import { JobTools } from './tools/job-tools.js';
+import { PanelTools } from './tools/panel-tools.js';
+import { TemplateTools } from './tools/template-tools.js';
+import { ViewTools } from './tools/view-tools.js';
+import { UserTools } from './tools/user-tools.js';
+import { DashboardTools } from './tools/dashboard-tools.js';
+import { ThemeTools } from './tools/theme-tools.js';
 import { logger, LogLevel } from './utils/logger.js';
 import { IconectError } from './utils/errors.js';
 
@@ -38,6 +44,12 @@ class IconectMCPServer {
   private fieldTools: FieldTools | null = null;
   private folderTools: FolderTools | null = null;
   private jobTools: JobTools | null = null;
+  private panelTools: PanelTools | null = null;
+  private templateTools: TemplateTools | null = null;
+  private viewTools: ViewTools | null = null;
+  private userTools: UserTools | null = null;
+  private dashboardTools: DashboardTools | null = null;
+  private themeTools: ThemeTools | null = null;
 
   constructor() {
     this.server = new Server(
@@ -135,6 +147,30 @@ class IconectMCPServer {
       
       if (this.jobTools) {
         tools.push(...this.jobTools.getTools());
+      }
+      
+      if (this.panelTools) {
+        tools.push(...this.panelTools.getTools());
+      }
+      
+      if (this.templateTools) {
+        tools.push(...this.templateTools.getTools());
+      }
+      
+      if (this.viewTools) {
+        tools.push(...this.viewTools.getTools());
+      }
+      
+      if (this.userTools) {
+        tools.push(...this.userTools.getTools());
+      }
+      
+      if (this.dashboardTools) {
+        tools.push(...this.dashboardTools.getTools());
+      }
+      
+      if (this.themeTools) {
+        tools.push(...this.themeTools.getTools());
       }
 
       return { tools };
@@ -380,6 +416,168 @@ class IconectMCPServer {
           }
         }
 
+        // Panel tools
+        if (this.panelTools) {
+          switch (name) {
+            case 'iconect_list_panels':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.panelTools.handleListPanels(args)) }] };
+            case 'iconect_get_panel':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.panelTools.handleGetPanel(args)) }] };
+            case 'iconect_create_panel':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.panelTools.handleCreatePanel(args)) }] };
+            case 'iconect_update_panel':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.panelTools.handleUpdatePanel(args)) }] };
+            case 'iconect_delete_panel':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.panelTools.handleDeletePanel(args)) }] };
+            case 'iconect_duplicate_panel':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.panelTools.handleDuplicatePanel(args)) }] };
+            case 'iconect_export_panel':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.panelTools.handleExportPanel(args)) }] };
+            case 'iconect_get_panel_data':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.panelTools.handleGetPanelData(args)) }] };
+          }
+        }
+
+        // Template tools
+        if (this.templateTools) {
+          switch (name) {
+            case 'iconect_list_templates':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleListTemplates(args)) }] };
+            case 'iconect_get_template':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleGetTemplate(args)) }] };
+            case 'iconect_create_template':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleCreateTemplate(args)) }] };
+            case 'iconect_update_template':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleUpdateTemplate(args)) }] };
+            case 'iconect_delete_template':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleDeleteTemplate(args)) }] };
+            case 'iconect_duplicate_template':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleDuplicateTemplate(args)) }] };
+            case 'iconect_render_template':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleRenderTemplate(args)) }] };
+            case 'iconect_validate_template':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleValidateTemplate(args)) }] };
+            case 'iconect_get_template_variables':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.templateTools.handleGetTemplateVariables(args)) }] };
+          }
+        }
+
+        // View tools
+        if (this.viewTools) {
+          switch (name) {
+            case 'iconect_list_views':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleListViews(args)) }] };
+            case 'iconect_get_view':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleGetView(args)) }] };
+            case 'iconect_create_view':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleCreateView(args)) }] };
+            case 'iconect_update_view':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleUpdateView(args)) }] };
+            case 'iconect_delete_view':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleDeleteView(args)) }] };
+            case 'iconect_duplicate_view':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleDuplicateView(args)) }] };
+            case 'iconect_share_view':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleShareView(args)) }] };
+            case 'iconect_get_view_data':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleGetViewData(args)) }] };
+            case 'iconect_export_view':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.viewTools.handleExportView(args)) }] };
+          }
+        }
+
+        // User tools
+        if (this.userTools) {
+          switch (name) {
+            case 'iconect_list_users':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleListUsers(args)) }] };
+            case 'iconect_get_user':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleGetUser(args)) }] };
+            case 'iconect_get_current_user':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleGetCurrentUser(args)) }] };
+            case 'iconect_update_user':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleUpdateUser(args)) }] };
+            case 'iconect_update_current_user':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleUpdateCurrentUser(args)) }] };
+            case 'iconect_update_user_preferences':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleUpdateUserPreferences(args)) }] };
+            case 'iconect_update_current_user_preferences':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleUpdateCurrentUserPreferences(args)) }] };
+            case 'iconect_change_password':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleChangePassword(args)) }] };
+            case 'iconect_reset_user_password':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleResetUserPassword(args)) }] };
+            case 'iconect_get_user_permissions':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleGetUserPermissions(args)) }] };
+            case 'iconect_update_user_roles':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleUpdateUserRoles(args)) }] };
+            case 'iconect_get_user_activity':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.userTools.handleGetUserActivity(args)) }] };
+          }
+        }
+
+        // Dashboard tools
+        if (this.dashboardTools) {
+          switch (name) {
+            case 'iconect_list_dashboards':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleListDashboards(args)) }] };
+            case 'iconect_get_dashboard':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleGetDashboard(args)) }] };
+            case 'iconect_create_dashboard':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleCreateDashboard(args)) }] };
+            case 'iconect_update_dashboard':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleUpdateDashboard(args)) }] };
+            case 'iconect_delete_dashboard':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleDeleteDashboard(args)) }] };
+            case 'iconect_duplicate_dashboard':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleDuplicateDashboard(args)) }] };
+            case 'iconect_add_widget':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleAddWidget(args)) }] };
+            case 'iconect_update_widget':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleUpdateWidget(args)) }] };
+            case 'iconect_remove_widget':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleRemoveWidget(args)) }] };
+            case 'iconect_get_widget_data':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleGetWidgetData(args)) }] };
+            case 'iconect_refresh_widget':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleRefreshWidget(args)) }] };
+            case 'iconect_export_dashboard':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleExportDashboard(args)) }] };
+            case 'iconect_share_dashboard':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.dashboardTools.handleShareDashboard(args)) }] };
+          }
+        }
+
+        // Theme tools
+        if (this.themeTools) {
+          switch (name) {
+            case 'iconect_list_themes':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleListThemes(args)) }] };
+            case 'iconect_get_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleGetTheme(args)) }] };
+            case 'iconect_create_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleCreateTheme(args)) }] };
+            case 'iconect_update_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleUpdateTheme(args)) }] };
+            case 'iconect_delete_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleDeleteTheme(args)) }] };
+            case 'iconect_duplicate_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleDuplicateTheme(args)) }] };
+            case 'iconect_apply_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleApplyTheme(args)) }] };
+            case 'iconect_get_current_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleGetCurrentTheme(args)) }] };
+            case 'iconect_preview_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handlePreviewTheme(args)) }] };
+            case 'iconect_validate_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleValidateTheme(args)) }] };
+            case 'iconect_export_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleExportTheme(args)) }] };
+            case 'iconect_import_theme':
+              return { content: [{ type: 'text', text: JSON.stringify(await this.themeTools.handleImportTheme(args)) }] };
+          }
+        }
+
         throw new IconectError(`Unknown tool: ${name}`, 'UNKNOWN_TOOL');
       } catch (error) {
         logger.error(`Tool execution failed: ${name}`, error as Error);
@@ -441,6 +639,12 @@ class IconectMCPServer {
       this.fieldTools = new FieldTools(this.httpClient);
       this.folderTools = new FolderTools(this.httpClient);
       this.jobTools = new JobTools(this.httpClient);
+      this.panelTools = new PanelTools(this.httpClient);
+      this.templateTools = new TemplateTools(this.httpClient);
+      this.viewTools = new ViewTools(this.httpClient);
+      this.userTools = new UserTools(this.httpClient);
+      this.dashboardTools = new DashboardTools(this.httpClient);
+      this.themeTools = new ThemeTools(this.httpClient);
 
       logger.info('Iconect MCP server configured successfully', {
         baseUrl: config.baseUrl,

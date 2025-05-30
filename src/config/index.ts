@@ -14,10 +14,7 @@ export class ConfigManager {
     return validated;
   }
 
-  get(): IconectConfig {
-    if (!this.config) {
-      throw new Error('Configuration not loaded. Call load() first.');
-    }
+  get(): IconectConfig | null {
     return this.config;
   }
 
@@ -50,6 +47,36 @@ export class ConfigManager {
 
   clear(): void {
     this.config = null;
+  }
+
+  reset(): void {
+    this.config = null;
+  }
+
+  validate(configData: any): { isValid: boolean; errors: string[] } {
+    try {
+      const merged = {
+        ...this.getDefaults(),
+        ...configData,
+      };
+      IconectConfigSchema.parse(merged);
+      return { isValid: true, errors: [] };
+    } catch (error: any) {
+      const errors: string[] = [];
+      if (error.errors) {
+        error.errors.forEach((err: any) => {
+          errors.push(`${err.path.join('.')}: ${err.message}`);
+        });
+      }
+      return { isValid: false, errors };
+    }
+  }
+
+  updatePartial(updates: Partial<IconectConfig>): IconectConfig {
+    if (!this.config) {
+      throw new Error('Configuration not loaded');
+    }
+    return this.update(updates);
   }
 }
 

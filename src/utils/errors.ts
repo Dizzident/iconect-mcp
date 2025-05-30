@@ -29,6 +29,30 @@ export class IconectError extends Error {
       details: this.details,
     };
   }
+
+  static authenticationError(message: string): IconectError {
+    return new IconectError(message, 'AUTHENTICATION_ERROR', 401);
+  }
+
+  static authorizationError(message: string): IconectError {
+    return new IconectError(message, 'AUTHORIZATION_ERROR', 403);
+  }
+
+  static validationError(message: string, details?: unknown): IconectError {
+    return new IconectError(message, 'VALIDATION_ERROR', 400, details);
+  }
+
+  static notFoundError(message: string): IconectError {
+    return new IconectError(message, 'NOT_FOUND', 404);
+  }
+
+  static internalError(message: string): IconectError {
+    return new IconectError(message, 'INTERNAL_ERROR', 500);
+  }
+
+  static timeoutError(message: string): IconectError {
+    return new IconectError(message, 'REQUEST_TIMEOUT', 408);
+  }
 }
 
 export class AuthenticationError extends IconectError {
