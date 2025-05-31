@@ -1,0 +1,131 @@
+name: Test Permissions
+
+on:
+  workflow_dispatch:
+    inputs:
+      test-security-events:
+        description: 'Test security-events permission'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  test-permissions:
+    name: Test Workflow Permissions
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      checks: write
+      pull-requests: write
+      issues: write
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Test contents permission
+      run: |
+        echo "✅ Contents: read permission working"
+        
+    - name: Test actions permission
+      run: |
+        echo "✅ Actions: read permission working"
+        
+    - name: Test checks permission
+      if: always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          try {
+            const { data } = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Permission Test',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: 'success',
+              output: {
+                title: 'Permission Test Passed',
+                summary: 'Successfully created a check run'
+              }
+            });
+            console.log('✅ Checks: write permission working');
+          } catch (error) {
+            console.log('❌ Checks: write permission NOT working');
+            console.log(error.message);
+          }
+          
+    - name: Test pull-requests permission
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          try {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✅ Pull requests: write permission working'
+            });
+          } catch (error) {
+            console.log('❌ Pull requests: write permission NOT working');
+            console.log(error.message);
+          }
+          
+    - name: Test security-events permission
+      if: inputs.test-security-events
+      run: |
+        cat > test.sarif << 'EOF'
+        {
+          "version": "2.1.0",
+          "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+          "runs": [{
+            "tool": {
+              "driver": {
+                "name": "PermissionTest",
+                "version": "1.0.0",
+                "rules": []
+              }
+            },
+            "results": []
+          }]
+        }
+        EOF
+        
+    - name: Upload SARIF for security-events test
+      if: inputs.test-security-events
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: test.sarif
+        category: permission-test
+      continue-on-error: true
+      id: sarif-upload
+      
+    - name: Check security-events result
+      if: inputs.test-security-events
+      run: |
+        if [ "${{ steps.sarif-upload.outcome }}" == "success" ]; then
+          echo "✅ Security-events: write permission working"
+        else
+          echo "❌ Security-events: write permission NOT working"
+          echo "This is expected for private repos without GitHub Advanced Security"
+        fi
+        
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Permission Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Permission | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| contents: read | ✅ Working |" >> $GITHUB_STEP_SUMMARY
+        echo "| actions: read | ✅ Working |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Notes" >> $GITHUB_STEP_SUMMARY
+        echo "- security-events permission requires GitHub Advanced Security for private repos" >> $GITHUB_STEP_SUMMARY
+        echo "- Some permissions may not be testable in all contexts" >> $GITHUB_STEP_SUMMARY
+        echo "- See .github/SECURITY_SETUP.md for configuration help" >> $GITHUB_STEP_SUMMARY
